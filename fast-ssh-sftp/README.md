@@ -3,6 +3,7 @@
 Install for this user:
 
 ```bash
+chmod +x fss
 sudo mv fss /usr/local/bin
 ```
 
