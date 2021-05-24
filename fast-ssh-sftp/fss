@@ -1,0 +1,32 @@
+#!/usr/bin/expect
+
+set file [open [lindex $argv 0]]
+if {$file == ""} {
+    puts "Error: no file provided";
+    exit
+}
+set data [split [read $file] "\n"]
+close $file
+set host [lindex $data 0]
+set username [lindex $data 1]
+set password [lindex $data 2]
+set parameters [lindex $data 3]
+
+set command [lindex $argv 1]
+if {$command == ""} {
+    puts "Using ssh by default.";
+    set command "ssh";
+}
+spawn $command $username@$host $parameters
+expect {
+    "*?assword:" { send "$password\n" }
+    "*?(yes/no*?" {
+        send "yes\n"
+        expect "*?assword:"
+        send "$password\n"
+    }
+}
+expect {
+    "*?$username@*?" { interact }
+    "sftp>" { interact }
+}
