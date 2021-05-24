@@ -1,11 +1,17 @@
 #!/usr/bin/expect
 
-set file [open [lindex $argv 0]]
-if {$file == ""} {
-    puts "Error: no file provided";
+set filename [lindex $argv 0]
+set space "        "
+set usage "Usage: fss \[-h\] config_file \[command\]\n    -h             show this help message\n    config_file    host, username, password, parameters\n    command        \(optional\) ssh \(by default\) / sftp"
+if {$filename == ""} {
+    puts $usage;
     exit
 }
-set data [split [read $file] "\n"]
+if {$filename == "-h"} {
+    puts $usage;
+    exit
+}
+set data [split [read [open $file]] "\n"]
 close $file
 set host [lindex $data 0]
 set username [lindex $data 1]
