@@ -11,7 +11,8 @@ if {$filename == "-h"} {
     puts $usage;
     exit
 }
-set data [split [read [open $file]] "\n"]
+set file [open $filename]
+set data [split [read $file] "\n"]
 close $file
 set host [lindex $data 0]
 set username [lindex $data 1]
