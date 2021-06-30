@@ -26,14 +26,22 @@ if {$command == ""} {
 }
 spawn $command $username@$host $parameters
 expect {
-    "*?assword:" { send "$password\n" }
+    "*?assword:" {
+        send "$password\n"
+        expect {
+            "*?$username@*?" { interact }
+            "sftp>" { interact }
+        }
+    }
     "*?(yes/no*?" {
         send "yes\n"
         expect "*?assword:"
         send "$password\n"
+        expect {
+            "*?$username@*?" { interact }
+            "sftp>" { interact }
+        }
     }
-}
-expect {
     "*?$username@*?" { interact }
     "sftp>" { interact }
 }
