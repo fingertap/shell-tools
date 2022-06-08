@@ -1,0 +1,86 @@
+#!/usr/bin/expect
+
+set use_sftp 0
+set use_port_forward 0
+set desc "fss is an ssh/sftp shortcut command line tool to save your time."
+set help_message "$desc\n\nUsage: fss \[-h, --help\] conn_file \[--sftp\] \[--fp, --forward-port\]\n    -h, --help         show this help message\n    conn_file          file that records: (host, username, password, parameters)\n    --sftp             using sftp rather than ssh\n    --fp, --forward-port SERVER_PORT:LOCAL_PORT\n                       use port forwarding, not executing commands"
+set info_file ""
+
+# Command line argument parsing
+for {set i 0} {$i < $argc} {incr i 1} {
+    if {[lindex $argv $i] == "--help" || [lindex $argv $i] == "-h"} {
+        puts $help_message
+        exit
+    }
+    if {[lindex $argv $i] == "--sftp"} {
+        set use_sftp 1
+        continue
+    }
+    if {[lindex $argv $i] == "--fp" || [lindex $argv $i] == "--forward-port"} {
+        incr i 1
+        set temp [split [lindex $argv $i] ":"]
+        set server_port [lindex $temp 0]
+        set local_port [lindex $temp 1]
+        set use_port_forward 1
+        continue
+    }
+    set info_file [lindex $argv $i]
+}
+
+if {$info_file == ""} {
+    puts $help_message
+    exit
+}
+
+# Parse the info file
+set file [open $info_file]
+set data [split [read $file] "\n"]
+close $file
+set host [lindex $data 0]
+set username [lindex $data 1]
+set password [lindex $data 2]
+set parameters [lindex $data 3]
+
+if {$use_sftp == 1} {
+    set cmd "sftp"
+} else {
+    set cmd "ssh"
+}
+
+if {$use_port_forward == 1} {
+    spawn $cmd $username@$host -NL $server_port:localhost:$local_port $parameters
+    expect {
+        "*?assword:" {
+            send "$password\n"
+        }
+        "*?(yes/no*?" {
+            send "yes\n"
+            expect "*?assword:"
+            send "$password\n"
+        }
+    }
+    interact
+} else {
+    spawn $cmd $username@$host $parameters
+    expect {
+        "*?assword:" {
+            send "$password\n"
+            expect {
+                "*?$username@*?" { interact }
+                "sftp>" { interact }
+            }
+        }
+        "*?(yes/no*?" {
+            send "yes\n"
+            expect "*?assword:"
+            send "$password\n"
+            expect {
+                "*?$username@*?" { interact }
+                "sftp>" { interact }
+            }
+        }
+        "*?$username@*?" { interact }
+        "sftp>" { interact }
+    }
+
+}
